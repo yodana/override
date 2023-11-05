@@ -1,21 +1,94 @@
-int main(int argc, const char **argv)
-{
-  int v4;
+#include <stdio.h>
+#include <string.h>
 
-  puts("***********************************");
-  puts("* \t     -Level00 -\t\t  *");
-  puts("***********************************");
-  printf("Password:");
-  scanf("%d", &v4);
-  if ( v4 == 5276 )
-  {
-    puts("\nAuthenticated!");
-    system("/bin/sh");
-    return 0;
-  }
-  else
-  {
-    puts("\nInvalid Password!");
-    return 1;
-  }
+void decrypt(char input) {
+    char key[] = "\x51\x7d\x7c\x75\x60\x73\x66\x67\x7e\x73\x66\x67\x7d\x7c\x7c\x61";  // Your key
+    int key_length = 16;
+
+
+    for (i = 0; i < 20; i++) {
+        input ^= key[i % key_length];
+    }
+
+    // Check the decrypted input and perform actions accordingly
+    if (memcmp(input, "Q}|u`sfg~sf{}|a3", 20) == 0) {
+        // The decrypted input matches a specific string
+        system("/bin/sh");
+    } else {
+        // The decrypted input doesn't match the specific string
+        puts("Invalid Password");
+    }
 }
+
+void test(int param_1, int param_2) {
+    int input_1 = param_1;
+    int input_2 = param_2;
+
+    int difference = input_2 - input_1;
+
+    if (difference > 0 && difference <= 0x15) {
+        // Jump to different cases based on the value of "difference"
+        switch (difference) {
+            case 1:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 2:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 3:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 4:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 5:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 6:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 7:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 8:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 9:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 10:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 11:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 12:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 13:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 14:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+            case 15:
+                decrypt(difference);  // You need to fill in the actual parameters for decrypt
+                break;
+        }
+    }
+}
+int main(void) {
+
+    puts("***********************************");
+    puts("*\t\tlevel03\t\t**");
+    puts("***********************************");
+    printf("Password:");
+
+    int input;
+    scanf("%d", &input);
+
+    test(0x1337d00d, input);
+
+    return 0;
+}
+
